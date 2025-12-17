@@ -1,0 +1,173 @@
+--customers--
+CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    city VARCHAR(50),
+    country VARCHAR(50),
+    signup_date DATE
+);
+
+--categories--
+CREATE TABLE categories (
+    category_id SERIAL PRIMARY KEY,
+    category_name VARCHAR(50)
+);
+
+
+--products--
+CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100),
+    category_id INT REFERENCES categories(category_id),
+    price NUMERIC(10,2),
+    stock INT
+);
+
+--orders--
+
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INT REFERENCES customers(customer_id),
+    order_date DATE,
+    order_status VARCHAR(20)
+);
+
+
+--order items--
+CREATE TABLE order_items (
+    order_item_id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(order_id),
+    product_id INT REFERENCES products(product_id),
+    quantity INT
+);
+
+--payments--
+CREATE TABLE payments (
+    payment_id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(order_id),
+    payment_method VARCHAR(30),
+    payment_date DATE,
+    amount NUMERIC(10,2)
+);
+
+
+--insert data--
+---categories--
+INSERT INTO categories (category_name) VALUES
+('Electronics'),
+('Fashion'),
+('Home & Furniture'),
+('Books');
+
+--cutomers--
+INSERT INTO customers (name,email,city,country,signup_date) VALUES
+('Amit Sharma','amit@gmail.com','Delhi','India','2023-01-05'),
+('Riya Singh','riya@gmail.com','Mumbai','India','2023-02-10'),
+('John Smith','john@gmail.com','New York','USA','2023-03-15'),
+('Sara Lee','sara@gmail.com','London','UK','2023-04-20');
+
+--products--
+INSERT INTO products (product_name,category_id,price,stock) VALUES
+('Laptop',1,60000,50),
+('Headphones',1,2500,200),
+('T-Shirt',2,1200,300),
+('Sofa',3,35000,20),
+('Bookshelf',3,8000,40),
+('Novel Book',4,500,500);
+
+--orders--
+INSERT INTO orders (customer_id,order_date,order_status) VALUES
+(1,'2023-06-01','Delivered'),
+(1,'2023-06-15','Delivered'),
+(2,'2023-07-01','Cancelled'),
+(3,'2023-07-10','Delivered'),
+(4,'2023-07-20','Delivered');
+
+--order items
+INSERT INTO order_items (order_id,product_id,quantity) VALUES
+(1,1,1),
+(1,2,2),
+(2,3,3),
+(3,4,1),
+(4,1,1),
+(4,6,2),
+(5,5,1);
+
+--payments--
+INSERT INTO payments (order_id,payment_method,payment_date,amount) VALUES
+(1,'UPI','2023-06-01',65000),
+(2,'Credit Card','2023-06-15',3600),
+(4,'PayPal','2023-07-10',61000),
+(5,'Debit Card','2023-07-20',8000);
+
+--analysis--
+
+--Revenue by Category--
+
+
+SELECT c.category_name,
+       SUM(oi.quantity * p.price) AS revenue
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id
+JOIN categories c ON p.category_id = c.category_id
+GROUP BY c.category_name;
+
+
+
+--orders by status 
+SELECT order_status, COUNT(*) AS total_orders
+FROM orders
+GROUP BY order_status;
+
+
+--monthly revenue view
+CREATE VIEW monthly_revenue AS
+SELECT TO_CHAR(payment_date, 'YYYY-MM') AS month,
+       SUM(amount) AS revenue
+FROM payments
+GROUP BY month
+ORDER BY month;
+
+SELECT * FROM monthly_revenue;
+
+
+--revenue by category view
+CREATE VIEW revenue_by_category AS
+SELECT c.category_name,
+       SUM(oi.quantity * p.price) AS revenue
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id
+JOIN categories c ON p.category_id = c.category_id
+GROUP BY c.category_name;
+
+SELECT * FROM revenue_by_category;
+
+
+--top 5 products--
+SELECT p.product_name,
+       SUM(oi.quantity) AS units_sold
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id
+GROUP BY p.product_name
+ORDER BY units_sold DESC
+LIMIT 5;
+
+--top customers--
+SELECT cu.name,
+       SUM(py.amount) AS total_spent
+FROM customers cu
+JOIN orders o ON cu.customer_id = o.customer_id
+JOIN payments py ON o.order_id = py.order_id
+GROUP BY cu.name
+ORDER BY total_spent DESC
+LIMIT 5;
+
+
+
+
+
+
+
+
+
